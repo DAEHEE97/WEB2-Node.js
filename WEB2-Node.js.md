@@ -484,11 +484,11 @@ var app = http.createServer(function(request,response){
       if(queryData.id === undefined){
  
         fs.readdir('./data', function(error, filelist){
+          
           var title = 'Welcome';
           var description = 'Hello, Node.js';
           
           var list = '<ul>';
-          
           var i = 0;
           while(i < filelist.length){
             list = list + `<li><a href="/?id=${filelist[i]}">${filelist[i]}</a></li>`;
@@ -522,7 +522,6 @@ var app = http.createServer(function(request,response){
         fs.readdir('./data', function(error, filelist){
           
           var list = '<ul>';
-          
           var i = 0;
           while(i < filelist.length){
             list = list + `<li><a href="/?id=${filelist[i]}">${filelist[i]}</a></li>`;
@@ -572,13 +571,120 @@ app.listen(3000);
 
 - 함수를 이용해서 코드를 정리 정돈
 
+
+```.js
+
+var http = require('http');
+var fs = require('fs');
+var url = require('url');
+ 
+function templateHTML(title, list, body){
+  return `
+  <!doctype html>
+  <html>
+  <head>
+    <title>WEB1 - ${title}</title>
+    <meta charset="utf-8">
+  </head>
+  <body>
+    <h1><a href="/">WEB</a></h1>
+    ${list}
+    ${body}
+  </body>
+  </html>
+  `;
+}
+
+function templateList(filelist){
+  var list = '<ul>';
+  var i = 0;
+  while(i < filelist.length){
+    list = list + `<li><a href="/?id=${filelist[i]}">${filelist[i]}</a></li>`;
+    i = i + 1;
+  }
+  list = list+'</ul>';
+  return list;
+}
+ 
+var app = http.createServer(function(request,response){
+    var _url = request.url;
+    var queryData = url.parse(_url, true).query;
+    var pathname = url.parse(_url, true).pathname;
+    
+    if(pathname === '/'){
+      if(queryData.id === undefined){
+        fs.readdir('./data', function(error, filelist){
+          var title = 'Welcome';
+          var description = 'Hello, Node.js';
+          var list = templateList(filelist);
+          var template = templateHTML(title, list, `<h2>${title}</h2>${description}`);
+          
+          response.writeHead(200);
+          response.end(template);
+        })
+      } else {
+        fs.readdir('./data', function(error, filelist){
+          fs.readFile(`data/${queryData.id}`, 'utf8', function(err, description){
+            var title = queryData.id;
+            var list = templateList(filelist);
+            var template = templateHTML(title, list, `<h2>${title}</h2>${description}`);
+            
+            response.writeHead(200);
+            response.end(template);
+          });
+        });
+      }
+    } else {
+      
+      response.writeHead(404);
+      response.end('Not found');
+    }
+ 
+ 
+ 
+});
+app.listen(3000);
+
+
+```
+
 ---
 
-## Node.js - 동기와 비동기 그리고 콜백
+## Node.js - 동기와 비동기 그리고 콜백 
 
-- 비동기 처리 방식
+- synchronous 
 
-- Node.js 실행순서
+- asynchronus
+
+
+```.js
+
+// synchronous & asynchronus
+
+var fs = require('fs');
+ 
+// readFileSync
+
+console.log('A');
+
+var result = fs.readFileSync('sample.txt', 'utf8');
+console.log(result);
+
+console.log('C');
+
+
+// readFile
+
+console.log('A');
+
+fs.readFile('sample.txt', 'utf8', function(err, result){
+    console.log(result);
+});
+
+console.log('C');
+
+
+```
 
 ---
 
@@ -588,6 +694,12 @@ app.listen(3000);
 
 - 실행중인 Node.js 애플리케이션을 관리하는 프로세스 매니저 PM2
 
+`sudo npn install pm2 -g`
+
+`pm2 start main.js`
+
+`pm2 monit`
+
 ---
 
 ## HTML - Form
@@ -596,32 +708,112 @@ app.listen(3000);
 
 - HTML로 폼을 만드는 방법
 
+HTML 폼(form)은 HTTP 요청을 보내기 위한 수단으로 사용됩니다. HTML form은 'get' 또는 'post'라는 두 가지 메서드를 사용하여 데이터를 서버로 보낼 수 있습니다. 두 방식에는 몇 가지 차이점이 있습니다.
+
+1. 전송되는 데이터 양
+
+'get' 방식은 쿼리 문자열(query string)을 사용하여 데이터를 전송합니다. 이는 URL에 포함되는 데이터이며, 제한된 데이터 양만 보낼 수 있습니다. 일반적으로 URL은 2048자까지 지원합니다.
+반면, 'post' 방식은 HTTP 요청 본문(request body)을 사용하여 데이터를 전송하며, 이를 통해 더 많은 양의 데이터를 전송할 수 있습니다.
+
+
+2. 보안
+
+'get' 방식은 URL에 데이터를 노출하기 때문에 보안에 취약합니다. 예를 들어, 로그인 정보와 같은 중요한 데이터를 'get' 방식으로 전송하면, URL에서 데이터가 노출되어 다른 사람이 이를 볼 수 있습니다.
+'post' 방식은 HTTP 요청 본문에 데이터를 포함시키기 때문에, 'get' 방식보다는 보안적입니다. 데이터는 URL에 노출되지 않으며, HTTP 요청 본문은 암호화될 수 있습니다.
+
+
+3. 캐싱
+
+'get' 방식은 브라우저에서 캐싱될 수 있습니다. 이는 같은 URL을 다시 요청할 때, 브라우저가 캐시된 데이터를 사용하여 요청을 처리하는 것을 의미합니다.
+'post' 방식은 브라우저에서 캐싱되지 않습니다. 이는 모든 HTTP 요청이 새로운 것으로 처리되어야 하기 때문입니다.
+
+
+- 따라서, 'get' 방식은 데이터 양이 작고 보안성이 중요하지 않을 때 사용하며, 'post' 방식은 데이터 양이 많거나 보안성이 중요한 경우에 사용합니다.
+
+
+
+### GET
+
+```.html
+<form action="http://localhost:3000/process_create" method="get">
+    <p><input type="text" name="title"></p>
+    <p>
+      <textarea name="description"></textarea>
+    </p>
+    <p>
+      <input type="submit">
+    </p>
+</form>
+
+```
+
+> `http://localhost:3000/process_create?title=sample&description=sample+is... `
 ---
 
-## App - 글생성 UI 만들기
+
+### POST
+
+
+```.html
+<form action="http://localhost:3000/process_create" method="post">
+    <p><input type="text" name="title"></p>
+    <p>
+      <textarea name="description"></textarea>
+    </p>
+    <p>
+      <input type="submit">
+    </p>
+</form>`
+```
+
+> `http://localhost:3000/process_create`
 
 ---
 
-## App - POST 방식으로 전송된 데이터 받기
+## 글생성 UI 만들기
 
 ---
 
-## App - 파일생성과 리다이렉션
+## POST 방식으로 전송된 데이터 받기
 
 ---
 
-##
+## 파일생성과 리다이렉션
 
 ---
 
-##
+## 수정 링크 생성
 
 ---
 
-##
+## 수정할 정보 전송
 
 ---
 
-##
+## 수정된 내용 저장
+
+---
+
+## 삭제 버튼 구현
+
+---
+
+## 글 삭제
+
+---
+
+## 객체를 이용해서 템플릿 기능 정리
+
+---
+
+## 모듈
+
+---
+
+## 보안
+
+---
+
+## API
 
 ---
