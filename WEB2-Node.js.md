@@ -708,7 +708,9 @@ console.log('C');
 
 - HTML로 폼을 만드는 방법
 
-HTML 폼(form)은 HTTP 요청을 보내기 위한 수단으로 사용됩니다. HTML form은 'get' 또는 'post'라는 두 가지 메서드를 사용하여 데이터를 서버로 보낼 수 있습니다. 두 방식에는 몇 가지 차이점이 있습니다.
+HTML 폼(form)은 HTTP 요청을 보내기 위한 수단으로 사용됩니다. 
+
+HTML form은 'get' 또는 'post'라는 두 가지 메서드를 사용하여 데이터를 서버로 보낼 수 있습니다. 두 방식에는 몇 가지 차이점이 있습니다.
 
 1. 전송되는 데이터 양
 
@@ -772,13 +774,114 @@ HTML 폼(form)은 HTTP 요청을 보내기 위한 수단으로 사용됩니다. 
 
 ## 글생성 UI 만들기
 
+
+
+```.js
+
+else if(pathname === '/create'){ fs.readdir('./data', function(error, filelist){
+      
+      var title = 'WEB - create';
+      var list = templateList(filelist);
+      
+      var template = templateHTML(title, list, `
+      <form action="http://localhost:3000/create_process" method="post">
+          <p><input type="text" name="title" placeholder="title"></p>
+          <p>
+            <textarea name="description" placeholder="description"></textarea>
+          </p>
+          <p>
+            <input type="submit">
+          </p>
+        </form>
+      `);
+
+      response.writeHead(200);
+      response.end(template);
+    });
+   }
+    
+```
+
+- url parse 시 ,글목록 내 pathname 이 존재 한다면 `if(pathname === '/')`
+
+- create : `else if(pathname === '/create')`
+
+
 ---
 
 ## POST 방식으로 전송된 데이터 받기
 
+```.js
+
+
+var qs = require('querystring');
+
+else if(pathname === '/create_process' ){
+
+      var body = '';
+      request.on('data', function(data){
+          body = body + data;
+      });
+
+      request.on('end', function(){
+          var post = qs.parse(body);
+          console.log(post);
+          
+          var title = post.title;
+          var description = post.description
+
+      });
+
+      response.writeHead(200);
+      response.end('success');
+
+    }
+    
+    else {
+      
+      response.writeHead(404);
+      response.end('Not found');
+    }
+ 
+ 
+ 
+});
+app.listen(3000);
+
+
+```
+
 ---
 
-## 파일생성과 리다이렉션
+## 파일 생성과 Redirection (리다이렉션)
+
+```.js
+
+else if(pathname === '/create_process' ){
+
+      var body = '';
+      request.on('data', function(data){
+          body = body + data;
+      });
+
+      request.on('end', function(){
+          var post = qs.parse(body);
+          console.log(post);
+
+          var title = post.title;
+          var description = post.description
+
+          fs.writeFile(`data/${title}`, description, 'utf8', function(err){
+            
+            response.writeHead(302, {Location: `/?id=${title}`});
+            response.end();
+            
+          })
+      });
+    }
+    
+```
+
 
 ---
 
